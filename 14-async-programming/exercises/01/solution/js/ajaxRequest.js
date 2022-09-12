@@ -16,6 +16,7 @@ function ajaxRequest({
   method = 'GET',
   delay = 5000,
   maxRetry = 2,
+  retryCount = 3,
 } = {}) {
   actions.initRequest(maxRetry, delay);
 
@@ -24,7 +25,7 @@ function ajaxRequest({
    * @param {string} message - the error message
    */
   function handleError(message) {
-
+    console.log('Error:', message);
   }
 
   /**
@@ -32,6 +33,8 @@ function ajaxRequest({
    * @param {Object} xhr - the error message
    */
   function handleLoad(xhr) {
+    console.log('Loaded:', xhr);
+    successCallback(xhr.response);
 
   }
 
@@ -39,6 +42,26 @@ function ajaxRequest({
    * Send ajax request
    */
   function request() {
+    let xhr = new XMLHttpRequest;       
+    xhr.open(method, url);
+    xhr.onload = ev => handleLoad(ev.target);
+    xhr.onerror = (ev) => {
+      if(ev.target.status === 404){
+        retryCount -=1;
+        if (retryCount === 0 ){
+          handleError(`Resource not avaiable: ${url}`);
+        } else{
+          const to = setTimeout(()=>{
+           clearTimeout(to);
+           request();
+          }, delay);
+        }
+      } else {
+        handleError(ev.message);
+      }
+      
+    }
+    xhr.send();
 
   }
 
